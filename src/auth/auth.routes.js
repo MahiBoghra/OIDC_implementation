@@ -3,6 +3,8 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import pool from '../db/db.js';
+import { authMiddleware } from './auth.middleware.js';
+import { getUserInfo } from './auth.service.js';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_fallback';
@@ -91,6 +93,20 @@ router.post('/login', async (req, res) => {
         });
     } catch (err) {
         console.error('Error during login:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// GETME Route
+router.get('/getme', authMiddleware, async (req, res) => {
+    try {
+        const userInfo = await getUserInfo(req.user.id);
+        return res.status(200).json(userInfo);
+    } catch (err) {
+        console.error('Error in getme route:', err);
+        if (err.message === 'User not found') {
+            return res.status(404).json({ error: 'User not found' });
+        }
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
